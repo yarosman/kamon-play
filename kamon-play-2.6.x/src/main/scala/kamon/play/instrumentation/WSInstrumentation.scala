@@ -33,13 +33,19 @@ class WSInstrumentation {
   @Pointcut("execution(* play.api.libs.ws.WSClient+.url(..))")
   def wsClientUrl(): Unit = {}
 
-  @Pointcut("execution(* play.api.libs.ws.StandaloneWSClient+.url(..))")
-  def standaloneWsClientUrl() = {}
-
-  @Around("wsClientUrl() || standaloneWsClientUrl()")
+  @Around("wsClientUrl()")
   def aroundWSClientUrl(pjp: ProceedingJoinPoint): Any =
     pjp.proceed()
       .asInstanceOf[WSRequest]
+      .withRequestFilter(_wsInstrumentationFilter)
+
+  @Pointcut("execution(* play.api.libs.ws.StandaloneWSClient+.url(..))")
+  def standaloneWsClientUrl() = {}
+
+  @Around("standaloneWsClientUrl()")
+  def aroundStandaloneWSClientUrl(pjp: ProceedingJoinPoint): Any =
+    pjp.proceed()
+      .asInstanceOf[StandaloneWSRequest]
       .withRequestFilter(_wsInstrumentationFilter)
 
 }
