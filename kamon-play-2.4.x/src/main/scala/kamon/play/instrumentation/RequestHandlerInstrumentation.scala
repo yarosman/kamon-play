@@ -53,7 +53,7 @@ class RequestHandlerInstrumentation {
   def onEncodeResponse(ctx: ChannelHandlerContext, response: DefaultHttpResponse): Unit = {
     val responseStatus = response.getStatus
     val serverSpan = ctx.getChannel.getContext().get(Span.ContextKey)
-    serverSpan.tag("http.status_code", responseStatus.getCode)
+    serverSpan.tagMetric("http.status_code", responseStatus.getCode.toString)
 
     if(isError(responseStatus.getCode))
       serverSpan.addError(responseStatus.getReasonPhrase)

@@ -67,7 +67,7 @@ object WSInstrumentation {
 
         responseFuture.transform(
           s = response => {
-            clientRequestSpan.tag("http.status_code", response.status)
+            clientRequestSpan.tagMetric("http.status_code", response.status.toString)
 
             if(isError(response.status))
               clientRequestSpan.addError("error")

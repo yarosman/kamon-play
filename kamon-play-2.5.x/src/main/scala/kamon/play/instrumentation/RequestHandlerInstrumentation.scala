@@ -50,7 +50,7 @@ class RequestHandlerInstrumentation {
     responseFuture.transform(
       s = response => {
         val responseStatus = response.getStatus
-        serverSpan.tag("http.status_code", responseStatus.code())
+        serverSpan.tagMetric("http.status_code", responseStatus.code().toString)
 
         if(isError(responseStatus.code))
           serverSpan.addError(responseStatus.reasonPhrase())
