@@ -31,7 +31,7 @@ val typesafeConfig = "com.typesafe" % "config" % "1.3.3"
 
 
 lazy val kamonPlay = Project("kamon-play", file("."))
-  //.settings(noPublishing: _*)
+  .settings(noPublishing: _*)
   .aggregate(kamonPlay26)
 
 
@@ -54,7 +54,6 @@ lazy val kamonPlay26 = Project("kamon-play-26", file("kamon-play-2.6.x"))
     },
     credentials += Credentials(Path.userHome / ".ivy2" / ".x2sy-credentials")))
   .settings(javaAgents += "org.aspectj" % "aspectjweaver" % "1.9.2" % "compile;test")
-  .settings(resolvers += Resolver.bintrayRepo("kamon-io", "snapshots"))
   .settings(
     libraryDependencies ++=
       compileScope(play26, playNetty26, playWS26, kamonCore, kamonScala) ++
