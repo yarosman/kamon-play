@@ -52,34 +52,34 @@ lazy val kamonPlay = Project("kamon-play", file("."))
 lazy val kamonPlay24 = Project("kamon-play-24", file("kamon-play-2.4.x"))
   .enablePlugins(JavaAgent)
   .settings(Seq(
-    bintrayPackage := "kamon-play",
-    moduleName := "kamon-play-2.4",
-    scalaVersion := "2.11.8",
-    crossScalaVersions := Seq("2.10.6", "2.11.8"),
+      bintrayPackage := "kamon-play",
+      moduleName := "kamon-play-2.4",
+      scalaVersion := "2.11.8",
+      crossScalaVersions := Seq("2.10.6", "2.11.8"),
     testGrouping in Test := singleTestPerJvm((definedTests in Test).value, (javaOptions in Test).value)))
   .settings(javaAgents += "org.aspectj" % "aspectjweaver"  % "1.8.10"  % "compile;test")
   .settings(resolvers += Resolver.bintrayRepo("kamon-io", "snapshots"))
   .settings(
     libraryDependencies ++=
       compileScope(play24, playWS24, kamonCore, kamonScala) ++
-        providedScope(aspectJ, typesafeConfig) ++
-        testScope(playTest24, scalatestplus24))
+      providedScope(aspectJ, typesafeConfig) ++
+      testScope(playTest24, scalatestplus24))
 
 lazy val kamonPlay25 = Project("kamon-play-25", file("kamon-play-2.5.x"))
   .enablePlugins(JavaAgent)
   .settings(Seq(
-    bintrayPackage := "kamon-play",
-    moduleName := "kamon-play-2.5",
-    scalaVersion := "2.11.8",
-    crossScalaVersions := Seq("2.11.8"),
-    testGrouping in Test := singleTestPerJvm((definedTests in Test).value, (javaOptions in Test).value)))
+      bintrayPackage := "kamon-play",
+      moduleName := "kamon-play-2.5",
+      scalaVersion := "2.11.8",
+      crossScalaVersions := Seq("2.11.8"),
+      testGrouping in Test := singleTestPerJvm((definedTests in Test).value, (javaOptions in Test).value)))
   .settings(javaAgents += "org.aspectj" % "aspectjweaver"  % "1.8.10"  % "compile;test")
   .settings(resolvers += Resolver.bintrayRepo("kamon-io", "snapshots"))
   .settings(
     libraryDependencies ++=
       compileScope(play25, playWS25, kamonCore, kamonScala) ++
-        providedScope(aspectJ, typesafeConfig) ++
-        testScope(playTest25, scalatestplus25, kamonTestkit, logbackClassic))
+      providedScope(aspectJ, typesafeConfig) ++
+      testScope(playTest25, scalatestplus25, kamonTestkit, logbackClassic))
 
 
 lazy val kamonPlay26 = Project("kamon-play-26", file("kamon-play-2.6.x"))
