@@ -22,22 +22,13 @@ import kamon.trace.{Span, SpanCustomizer}
 import kamon.util.CallingThreadExecutionContext
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.{Around, Aspect, Pointcut}
-import play.api.libs.ws.{StandaloneWSRequest, StandaloneWSResponse, WSRequest, WSRequestExecutor, WSRequestFilter}
+import play.api.libs.ws.{StandaloneWSRequest, StandaloneWSResponse, WSRequestExecutor, WSRequestFilter}
 
 import scala.concurrent.Future
 
 @Aspect
 class WSInstrumentation {
   import WSInstrumentation._wsInstrumentationFilter
-
-  @Pointcut("execution(* play.api.libs.ws.WSClient+.url(..))")
-  def wsClientUrl(): Unit = {}
-
-  @Around("wsClientUrl()")
-  def aroundWSClientUrl(pjp: ProceedingJoinPoint): Any =
-    pjp.proceed()
-      .asInstanceOf[WSRequest]
-      .withRequestFilter(_wsInstrumentationFilter)
 
   @Pointcut("execution(* play.api.libs.ws.StandaloneWSClient+.url(..))")
   def standaloneWsClientUrl() = {}
