@@ -45,7 +45,7 @@ val akkaHttp          = "com.typesafe.akka"         %%  "akka-http-core"        
 
 
 lazy val kamonPlay = Project("kamon-play", file("."))
-  //.settings(noPublishing: _*)
+  .settings(noPublishing: _*)
   .aggregate(kamonPlay24, kamonPlay25, kamonPlay26)
 
 
