@@ -31,7 +31,7 @@ val typesafeConfig = "com.typesafe" % "config" % "1.3.3"
 
 
 lazy val kamonPlay = Project("kamon-play", file("."))
-  .settings(noPublishing: _*)
+  //.settings(noPublishing: _*)
   .aggregate(kamonPlay26)
 
 
@@ -40,7 +40,7 @@ lazy val kamonPlay26 = Project("kamon-play-26", file("kamon-play-2.6.x"))
   .settings(Seq(
     name := "kamon-play-2.6",
     scalaVersion := "2.12.8",
-    testGrouping in Test := singleTestPerJvm((definedTests in Test).value, (javaOptions in Test).value),
+    //testGrouping in Test := singleTestPerJvm((definedTests in Test).value, (javaOptions in Test).value),
     organization := "com.x2sy",
     organizationName := "x2sy",
     organizationHomepage := Some(new URL("http://x2sy.com")),
@@ -62,12 +62,12 @@ lazy val kamonPlay26 = Project("kamon-play-26", file("kamon-play-2.6.x"))
 
 import sbt.Tests._
 
-def singleTestPerJvm(tests: Seq[TestDefinition], jvmSettings: Seq[String]): Seq[Group] =
-  tests map { test =>
-    Group(
-      name = test.name,
-      tests = Seq(test),
-      runPolicy = SubProcess(ForkOptions(runJVMOptions = jvmSettings)))
-  }
-
-enableProperCrossScalaVersionTasks
+//def singleTestPerJvm(tests: Seq[TestDefinition], jvmSettings: Seq[String]): Seq[Group] =
+//  tests map { test =>
+//    Group(
+//      name = test.name,
+//      tests = Seq(test),
+//      runPolicy = SubProcess(ForkOptions(runJVMOptions = jvmSettings)))
+//  }
+//
+//enableProperCrossScalaVersionTasks
