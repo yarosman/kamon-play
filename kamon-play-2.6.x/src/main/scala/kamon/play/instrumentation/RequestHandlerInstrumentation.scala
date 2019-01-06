@@ -56,7 +56,7 @@ object RequestHandlerInstrumentation {
       s = response => {
         val genericResponse = builder.build(response)
         val statusCode = genericResponse.statusCode
-        serverSpan.tagMetric("http.status_code", statusCode.toString)
+        serverSpan.tag("http.status_code", statusCode)
 
         if(isError(statusCode)) {
           serverSpan.addError(genericResponse.reason)
