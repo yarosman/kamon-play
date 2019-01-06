@@ -104,7 +104,5 @@ def singleTestPerJvm(tests: Seq[TestDefinition], jvmSettings: Seq[String]): Seq[
     Group(
       name = test.name,
       tests = Seq(test),
-      runPolicy = SubProcess(ForkOptions(runJVMOptions = jvmSettings)))
+      runPolicy = SubProcess(ForkOptions(javaHome = None, outputStrategy = None, bootJars = Vector(), workingDirectory = None, runJVMOptions = jvmSettings.toVector, connectInput = false, envVars = Map())))
   }
-
-enableProperCrossScalaVersionTasks
