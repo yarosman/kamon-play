@@ -104,5 +104,5 @@ def singleTestPerJvm(tests: Seq[TestDefinition], jvmSettings: Seq[String]): Seq[
     Group(
       name = test.name,
       tests = Seq(test),
-      runPolicy = SubProcess(ForkOptions(javaHome = None, outputStrategy = None, bootJars = Vector(), workingDirectory = None, runJVMOptions = jvmSettings.toVector, connectInput = false, envVars = Map())))
+      runPolicy = SubProcess(ForkOptions(javaHome = Option.empty[File], outputStrategy = Option.empty[OutputStrategy], bootJars = Vector(), workingDirectory = Option.empty[File], runJVMOptions = jvmSettings.toVector, connectInput = false, envVars = Map.empty[String, String])))
   }
