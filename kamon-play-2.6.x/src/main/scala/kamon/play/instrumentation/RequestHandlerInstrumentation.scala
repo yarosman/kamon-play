@@ -16,7 +16,7 @@
 package kamon.play.instrumentation
 
 import kamon.Kamon
-import kamon.context.Context
+import kamon.play.Play
 import kamon.trace.Span
 import kamon.util.CallingThreadExecutionContext
 
@@ -56,7 +56,12 @@ object RequestHandlerInstrumentation {
       s = response => {
         val genericResponse = builder.build(response)
         val statusCode = genericResponse.statusCode
-        serverSpan.tag("http.status_code", statusCode)
+
+        if (Play.shouldAttachHttpStatusMetric) {
+          serverSpan.tagMetric("http.status_code", statusCode.toString)
+        } else {
+          serverSpan.tag("http.status_code", statusCode)
+        }
 
         if(isError(statusCode)) {
           serverSpan.addError(genericResponse.reason)

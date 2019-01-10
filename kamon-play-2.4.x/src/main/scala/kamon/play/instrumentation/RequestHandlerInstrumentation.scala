@@ -17,6 +17,7 @@ package kamon.play.instrumentation
 
 import kamon.Kamon
 import kamon.play.OperationNameFilter
+import kamon.play.Play
 import kamon.trace.Span
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.{AfterThrowing, _}
@@ -53,7 +54,12 @@ class RequestHandlerInstrumentation {
   def onEncodeResponse(ctx: ChannelHandlerContext, response: DefaultHttpResponse): Unit = {
     val responseStatus = response.getStatus
     val serverSpan = ctx.getChannel.getContext().get(Span.ContextKey)
-    serverSpan.tag("http.status_code", responseStatus.getCode)
+
+    if (Play.shouldAttachHttpStatusMetric) {
+      serverSpan.tagMetric("http.status_code", responseStatus.getCode.toString)
+    } else {
+      serverSpan.tag("http.status_code", responseStatus.getCode)
+    }
 
     if(isError(responseStatus.getCode))
       serverSpan.addError(responseStatus.getReasonPhrase)

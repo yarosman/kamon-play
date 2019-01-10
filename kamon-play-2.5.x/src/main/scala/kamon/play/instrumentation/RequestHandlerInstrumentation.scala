@@ -19,6 +19,7 @@ import io.netty.handler.codec.http.{HttpRequest, HttpResponse}
 import kamon.Kamon
 import kamon.context.Context
 import kamon.play.OperationNameFilter
+import kamon.play.Play
 import kamon.trace.Span
 import kamon.util.CallingThreadExecutionContext
 import org.aspectj.lang.ProceedingJoinPoint
@@ -50,7 +51,12 @@ class RequestHandlerInstrumentation {
     responseFuture.transform(
       s = response => {
         val responseStatus = response.getStatus
-        serverSpan.tag("http.status_code", responseStatus.code())
+
+        if (Play.shouldAttachHttpStatusMetric) {
+          serverSpan.tagMetric("http.status_code", responseStatus.code().toString)
+        } else {
+          serverSpan.tag("http.status_code", responseStatus.code())
+        }
 
         if(isError(responseStatus.code))
           serverSpan.addError(responseStatus.reasonPhrase())

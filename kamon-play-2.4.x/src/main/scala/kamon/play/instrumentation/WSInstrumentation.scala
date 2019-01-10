@@ -53,7 +53,11 @@ class WSInstrumentation {
 
     responseFuture.transform(
       s = response => {
-        clientRequestSpan.tag("http.status_code", response.status)
+        if (Play.shouldAttachHttpStatusMetric) {
+          clientRequestSpan.tagMetric("http.status_code", response.status.toString)
+        } else {
+          clientRequestSpan.tag("http.status_code", response.status)
+        }
 
         if(isError(response.status))
           clientRequestSpan.addError("error")

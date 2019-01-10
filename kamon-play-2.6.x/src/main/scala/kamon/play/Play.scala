@@ -25,6 +25,8 @@ import kamon.util.DynamicAccess
 object Play {
 
   @volatile private var nameGenerator: NameGenerator = new DefaultNameGenerator()
+  @volatile private var attachHttpStatus: Boolean = false
+
   loadConfiguration(Kamon.config())
 
   def generateOperationName(requestHeader: RequestHeader): String =
@@ -33,10 +35,13 @@ object Play {
   def generateHttpClientOperationName(request: StandaloneWSRequest): String =
     nameGenerator.generateHttpClientOperationName(request)
 
+  def shouldAttachHttpStatusMetric: Boolean = attachHttpStatus
+
   private def loadConfiguration(config: Config): Unit = {
     val dynamic = new DynamicAccess(getClass.getClassLoader)
     val nameGeneratorFQCN = config.getString("kamon.play.name-generator")
     nameGenerator =  dynamic.createInstanceFor[NameGenerator](nameGeneratorFQCN, Nil).get
+    attachHttpStatus = config.getBoolean("kamon.play.tag-metrics.attach-http-status")
   }
 
   Kamon.onReconfigure(new OnReconfigureHook {
