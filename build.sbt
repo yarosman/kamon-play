@@ -94,8 +94,8 @@ lazy val kamonPlay26 = Project("kamon-play-26", file("kamon-play-2.6.x"))
   .settings(resolvers += Resolver.bintrayRepo("kamon-io", "snapshots"))
   .settings(
     libraryDependencies ++=
-      compileScope(play26, playNetty26, playAkkaHttp26, playWS26, kamonCore, kamonScala) ++
-      providedScope(aspectJ, typesafeConfig) ++
+      compileScope(kamonCore, kamonScala) ++
+      providedScope(aspectJ, play26, playNetty26, playAkkaHttp26, playWS26, typesafeConfig) ++
       testScope(playTest26, scalatestplus26, playLogBack26, kamonTestkit))
 
 import sbt.Tests._
