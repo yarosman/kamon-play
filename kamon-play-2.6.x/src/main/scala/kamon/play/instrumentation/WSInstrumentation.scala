@@ -112,6 +112,9 @@ object WSInstrumentation {
             if (isError(response.status))
               clientRequestSpan.addError("error")
 
+            if (response.status == StatusCodes.NotFound)
+              clientRequestSpan.setOperationName("not-found")
+
             clientRequestSpan.finish()
             response
           },

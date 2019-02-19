@@ -65,6 +65,9 @@ object RequestHandlerInstrumentation {
           serverSpan.addError(genericResponse.reason)
         }
 
+        if (statusCode == StatusCodes.NotFound)
+          serverSpan.setOperationName("not-found")
+
         serverSpan.finish()
         response
       },
