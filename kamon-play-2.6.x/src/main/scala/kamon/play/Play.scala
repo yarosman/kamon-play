@@ -15,6 +15,7 @@
  */
 
 package kamon
+
 package play
 
 import _root_.play.api.libs.ws.StandaloneWSRequest
@@ -34,9 +35,9 @@ object Play {
     nameGenerator.generateHttpClientOperationName(request)
 
   private def loadConfiguration(config: Config): Unit = {
-    val dynamic = new DynamicAccess(getClass.getClassLoader)
+    val dynamic           = new DynamicAccess(getClass.getClassLoader)
     val nameGeneratorFQCN = config.getString("kamon.play.name-generator")
-    nameGenerator =  dynamic.createInstanceFor[NameGenerator](nameGeneratorFQCN, Nil).get
+    nameGenerator = dynamic.createInstanceFor[NameGenerator](nameGeneratorFQCN, Nil).get
   }
 
   Kamon.onReconfigure(new OnReconfigureHook {
@@ -50,29 +51,34 @@ trait NameGenerator {
   def generateHttpClientOperationName(request: StandaloneWSRequest): String
 }
 
-
 class DefaultNameGenerator extends NameGenerator {
   import _root_.scala.collection.concurrent.TrieMap
   import _root_.play.api.routing.Router
   import java.util.Locale
 
-  private val cache = TrieMap.empty[String, String]
+  private val cache            = TrieMap.empty[String, String]
   private val normalizePattern = """\$([^<]+)<[^>]+>""".r
 
-  def generateOperationName(requestHeader: RequestHeader): String = requestHeader.attrs.get(Router.Attrs.HandlerDef).map { handlerDef ⇒
-    cache.getOrElseUpdate(s"${handlerDef.verb}${handlerDef.path}", {
-      val traceName = {
-        // Convert paths of form GET /foo/bar/$paramname<regexp>/blah to foo.bar.paramname.blah.get
-        val p = normalizePattern.replaceAllIn(handlerDef.path, "$1").replace('/', '.').dropWhile(_ == '.')
-        val normalisedPath = {
-          if (p.lastOption.exists(_ != '.')) s"$p."
-          else p
-        }
-        s"$normalisedPath${handlerDef.verb.toLowerCase(Locale.ENGLISH)}"
+  def generateOperationName(requestHeader: RequestHeader): String =
+    requestHeader.attrs
+      .get(Router.Attrs.HandlerDef)
+      .map { handlerDef ⇒
+        cache.getOrElseUpdate(
+          s"${handlerDef.verb}${handlerDef.path}", {
+            val traceName = {
+              // Convert paths of form GET /foo/bar/$paramname<regexp>/blah to foo.bar.paramname.blah.get
+              val p = normalizePattern.replaceAllIn(handlerDef.path, "$1").replace('/', '.').dropWhile(_ == '.')
+              val normalisedPath = {
+                if (p.lastOption.exists(_ != '.')) s"$p."
+                else p
+              }
+              s"$normalisedPath${handlerDef.verb.toLowerCase(Locale.ENGLISH)}"
+            }
+            traceName
+          }
+        )
       }
-      traceName
-    })
-  } getOrElse "UntaggedTrace"
+      .getOrElse("UntaggedTrace")
 
   def generateHttpClientOperationName(request: StandaloneWSRequest): String = request.uri.getAuthority
 }

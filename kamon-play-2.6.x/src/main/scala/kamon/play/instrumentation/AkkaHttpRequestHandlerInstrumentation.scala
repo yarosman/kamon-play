@@ -17,7 +17,7 @@ package kamon.play.instrumentation
 
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import kamon.context.Context
-import kamon.play.{OperationNameFilter, instrumentation}
+import kamon.play.{instrumentation, OperationNameFilter}
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation._
 import play.api.mvc.EssentialFilter
@@ -27,15 +27,17 @@ import scala.concurrent.Future
 object AkkaHttpRequestHandlerInstrumentation {
 
   case class AkkaHttpGenericRequest(request: HttpRequest) extends GenericRequest {
-    override val headers: Map[String, String] = request.headers.map { h => h.name() -> h.value() }.toMap
-    override val method: String = request.method.value
-    override val url: String = request.getUri.toString
+    override val headers: Map[String, String] = request.headers.map { h =>
+      h.name() -> h.value()
+    }.toMap
+    override val method: String    = request.method.value
+    override val url: String       = request.getUri.toString
     override val component: String = "play.server.akka-http"
   }
 
   case class AkkaHttpGenericResponse(response: HttpResponse) extends GenericResponse {
     override val statusCode: Int = response.status.intValue()
-    override val reason: String = response.status.reason()
+    override val reason: String  = response.status.reason()
   }
 
   implicit case object AkkaHttpGenericResponseBuilder extends GenericResponseBuilder[HttpResponse] {
@@ -54,7 +56,8 @@ class AkkaHttpRequestHandlerInstrumentation {
   @Around("execution(* play.core.server.AkkaHttpServer.*handleRequest(..)) && args(request, *)")
   def routeRequestNumberTwo(pjp: ProceedingJoinPoint, request: HttpRequest): Any = {
     import AkkaHttpRequestHandlerInstrumentation._
-    RequestHandlerInstrumentation.handleRequest(pjp.proceed().asInstanceOf[Future[HttpResponse]], AkkaHttpGenericRequest(request))
+    RequestHandlerInstrumentation
+      .handleRequest(pjp.proceed().asInstanceOf[Future[HttpResponse]], AkkaHttpGenericRequest(request))
   }
 
   @Around("call(* play.api.http.HttpFilters.filters(..))")

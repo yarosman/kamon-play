@@ -15,48 +15,56 @@
 
 val play26Version = "2.6.20"
 
-val kamonCore = "io.kamon" %% "kamon-core" % "1.1.4"
-val kamonScala = "io.kamon" %% "kamon-scala-future" % "1.0.0"
-val kamonTestkit = "io.kamon" %% "kamon-testkit" % "1.1.1"
+val kamonCore    = "io.kamon" %% "kamon-core"         % "1.1.4"
+val kamonScala   = "io.kamon" %% "kamon-scala-future" % "1.0.0"
+val kamonTestkit = "io.kamon" %% "kamon-testkit"      % "1.1.1"
 
 //play 2.6.x
-val play26 = "com.typesafe.play" %% "play" % play26Version
-val playNetty26 = "com.typesafe.play" %% "play-netty-server" % play26Version
-val playWS26 = "com.typesafe.play" %% "play-ws" % play26Version
-val playLogBack26 = "com.typesafe.play" %% "play-logback" % play26Version
-val playTest26 = "com.typesafe.play" %% "play-test" % play26Version
-val scalatestplus26 = "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2"
-val akkaHttp = "com.typesafe.akka" %% "akka-http-core" % "10.1.6"
-val typesafeConfig = "com.typesafe" % "config" % "1.3.3"
-
+val play26                = "com.typesafe.play"      %% "play"                  % play26Version
+val playNetty26           = "com.typesafe.play"      %% "play-netty-server"     % play26Version
+val playWS26              = "com.typesafe.play"      %% "play-ws"               % play26Version
+val playLogBack26         = "com.typesafe.play"      %% "play-logback"          % play26Version
+val playTest26            = "com.typesafe.play"      %% "play-test"             % play26Version
+val scalatestplus26       = "org.scalatestplus.play" %% "scalatestplus-play"    % "3.1.2"
+val akkaHttp              = "com.typesafe.akka"      %% "akka-http-core"        % "10.1.6"
+val typesafeConfig        = "com.typesafe"           % "config"                 % "1.3.3"
+val interserviceApiJson26 = "com.x2sy"               %% "interservice-api-json" % "1.0.1"
 
 lazy val kamonPlay = Project("kamon-play", file("."))
-  //.settings(noPublishing: _*)
+//.settings(noPublishing: _*)
   .aggregate(kamonPlay26)
-
 
 lazy val kamonPlay26 = Project("kamon-play-26", file("kamon-play-2.6.x"))
   .enablePlugins(JavaAgent)
-  .settings(Seq(
-    name := "kamon-play-2.6",
-    scalaVersion := "2.12.8",
-    //testGrouping in Test := singleTestPerJvm((definedTests in Test).value, (javaOptions in Test).value),
-    organization := "com.x2sy",
-    organizationName := "x2sy",
-    organizationHomepage := Some(new URL("http://x2sy.com")),
-    publishMavenStyle := true,
-    publishTo := {
-      val nexus = "https://nexus.x2sy.com/repository/"
-      if (isSnapshot.value)
-        Some("x2sy Snapshots" at nexus + "snapshots/")
-      else
-        Some("x2sy Releases" at nexus + "releases/")
-    },
-    credentials += Credentials(Path.userHome / ".ivy2" / ".x2sy-credentials")))
+  .settings(
+    Seq(
+      name := "kamon-play-2.6",
+      scalaVersion := "2.12.8",
+      //testGrouping in Test := singleTestPerJvm((definedTests in Test).value, (javaOptions in Test).value),
+      organization := "com.x2sy",
+      organizationName := "x2sy",
+      organizationHomepage := Some(new URL("http://x2sy.com")),
+      publishMavenStyle := true,
+      publishTo := {
+        val nexus = "https://nexus.x2sy.com/repository/"
+        if (isSnapshot.value)
+          Some("x2sy Snapshots".at(nexus + "snapshots/"))
+        else
+          Some("x2sy Releases".at(nexus + "releases/"))
+      },
+      credentials += Credentials(Path.userHome / ".ivy2" / ".x2sy-credentials")
+    ),
+    resolvers ++= Seq(
+      "x2sy snapshots".at("https://nexus.x2sy.com/repository/snapshots/"),
+      "x2sy releases".at("https://nexus.x2sy.com/repository/releases/")
+    ),
+    scalafmtOnCompile in ThisBuild := true,
+    scalafmtConfig := file("./.scalafmt.conf")
+  )
   .settings(javaAgents += "org.aspectj" % "aspectjweaver" % "1.9.2" % "compile;test")
   .settings(
     libraryDependencies ++=
-      compileScope(play26, playNetty26, playWS26, kamonCore, kamonScala) ++
+      compileScope(play26, playNetty26, playWS26, kamonCore, kamonScala, interserviceApiJson26) ++
         providedScope(aspectJ, typesafeConfig, akkaHttp) ++
         testScope(playTest26, scalatestplus26, playLogBack26, kamonTestkit))
 
