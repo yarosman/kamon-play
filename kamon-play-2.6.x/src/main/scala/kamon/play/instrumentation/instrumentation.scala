@@ -21,7 +21,7 @@ import play.api.libs.ws.StandaloneWSRequest
 
 package object instrumentation {
 
-  def encodeContext(ctx:Context, request:StandaloneWSRequest): StandaloneWSRequest = {
+  def encodeContext(ctx: Context, request: StandaloneWSRequest): StandaloneWSRequest = {
     val textMap = Kamon.contextCodec().HttpHeaders.encode(ctx)
     request.addHttpHeaders(textMap.values.toSeq: _*)
   }
@@ -32,13 +32,19 @@ package object instrumentation {
   }
 
   private def readOnlyTextMapFromHeaders(headers: Map[String, String]): TextMap = new TextMap {
-    override def values: Iterator[(String, String)] = headers.iterator
-    override def get(key: String): Option[String] = headers.get(key)
+    override def values: Iterator[(String, String)]    = headers.iterator
+    override def get(key: String): Option[String]      = headers.get(key)
     override def put(key: String, value: String): Unit = {}
   }
 
   def isError(statusCode: Int): Boolean =
     statusCode >= 500 && statusCode < 600
+
+  def isMggError(statusCode: Int): Boolean = {
+    val statusClass = statusCode / 100
+
+    statusClass == 4 || statusClass == 5
+  }
 
   object StatusCodes {
     val NotFound = 404

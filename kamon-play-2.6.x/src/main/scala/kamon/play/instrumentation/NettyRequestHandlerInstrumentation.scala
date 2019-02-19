@@ -17,7 +17,7 @@ package kamon.play.instrumentation
 
 import io.netty.handler.codec.http.{HttpRequest, HttpResponse}
 import kamon.context.Context
-import kamon.play.{OperationNameFilter, instrumentation}
+import kamon.play.{instrumentation, OperationNameFilter}
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation._
 import play.api.mvc.EssentialFilter
@@ -27,18 +27,25 @@ import scala.concurrent.Future
 object NettyRequestHandlerInstrumentation {
 
   case class NettyGenericRequest(request: HttpRequest) extends GenericRequest {
-    override val headers: Map[String, String] =  {
+    override val headers: Map[String, String] = {
       import scala.collection.JavaConverters._
-      request.headers().iteratorAsString().asScala.map { h => h.getKey -> h.getValue }.toMap
+      request
+        .headers()
+        .iteratorAsString()
+        .asScala
+        .map { h =>
+          h.getKey -> h.getValue
+        }
+        .toMap
     }
     override val method: String = request.method().name()
-    override val url: String = request.uri()
-    override val component = "play.server.netty"
+    override val url: String    = request.uri()
+    override val component      = "play.server.netty"
   }
 
   case class NettyGenericResponse(response: HttpResponse) extends GenericResponse {
     override val statusCode: Int = response.status().code()
-    override val reason: String = response.status.reasonPhrase()
+    override val reason: String  = response.status.reasonPhrase()
   }
 
   implicit case object NettyGenericResponseBuilder extends GenericResponseBuilder[HttpResponse] {
@@ -55,7 +62,8 @@ class NettyRequestHandlerInstrumentation {
   @Around("execution(* play.core.server.netty.PlayRequestHandler.handle(..)) && args(*, request)")
   def onHandle(pjp: ProceedingJoinPoint, request: HttpRequest): Any = {
     import NettyRequestHandlerInstrumentation._
-    RequestHandlerInstrumentation.handleRequest(pjp.proceed().asInstanceOf[Future[HttpResponse]], NettyGenericRequest(request))
+    RequestHandlerInstrumentation
+      .handleRequest(pjp.proceed().asInstanceOf[Future[HttpResponse]], NettyGenericRequest(request))
   }
 
   @Around("call(* play.api.http.HttpFilters.filters(..))")

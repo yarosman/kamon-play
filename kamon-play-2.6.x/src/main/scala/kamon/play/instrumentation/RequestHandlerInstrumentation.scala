@@ -40,9 +40,11 @@ trait GenericResponseBuilder[T] {
 
 object RequestHandlerInstrumentation {
 
-  def handleRequest[T](responseInvocation: => Future[T], request: GenericRequest)(implicit builder: GenericResponseBuilder[T]): Future[T] = {
+  def handleRequest[T](responseInvocation: => Future[T], request: GenericRequest)(
+      implicit builder: GenericResponseBuilder[T]): Future[T] = {
     val incomingContext = context(request.headers)
-    val serverSpan = Kamon.buildSpan("unknown-operation")
+    val serverSpan = Kamon
+      .buildSpan("unknown-operation")
       .asChildOf(incomingContext.get(Span.ContextKey))
       .withMetricTag("span.kind", "server")
       .withMetricTag("component", request.component)
@@ -50,20 +52,18 @@ object RequestHandlerInstrumentation {
       .withTag("http.url", request.url)
       .start()
 
-    val responseFuture = Kamon.withContext(incomingContext.withKey(Span.ContextKey, serverSpan))(responseInvocation)
+    val responseFuture =
+      Kamon.withContext(incomingContext.withKey(Span.ContextKey, serverSpan))(responseInvocation)
 
     responseFuture.transform(
       s = response => {
         val genericResponse = builder.build(response)
-        val statusCode = genericResponse.statusCode
+        val statusCode      = genericResponse.statusCode
         serverSpan.tagMetric("http.status_code", statusCode.toString)
 
-        if(isError(statusCode)) {
+        if (isError(statusCode)) {
           serverSpan.addError(genericResponse.reason)
         }
-
-        if(statusCode == StatusCodes.NotFound)
-          serverSpan.setOperationName("not-found")
 
         serverSpan.finish()
         response
