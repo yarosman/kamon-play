@@ -42,5 +42,8 @@ package object instrumentation {
 
   object StatusCodes {
     val NotFound = 404
+
+    val ServiceUnavailable = 503
+    val GatewayTimeout = 504
   }
 }

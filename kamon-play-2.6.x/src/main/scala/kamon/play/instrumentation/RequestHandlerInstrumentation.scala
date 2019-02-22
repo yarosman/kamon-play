@@ -15,8 +15,10 @@
 
 package kamon.play.instrumentation
 
+import java.net.SocketTimeoutException
+import java.util.concurrent.TimeoutException
+
 import kamon.Kamon
-import kamon.context.Context
 import kamon.trace.Span
 import kamon.util.CallingThreadExecutionContext
 
@@ -69,10 +71,19 @@ object RequestHandlerInstrumentation {
         response
       },
       f = error => {
+        exceptionTags(error).foreach {
+          case (k, v) =>  serverSpan.tagMetric(k, v)
+        }
         serverSpan.addError("error.object", error)
         serverSpan.finish()
         error
       }
     )(CallingThreadExecutionContext)
+  }
+
+  private def exceptionTags(ex: Throwable) = ex match {
+    case t: TimeoutException => Map("http.status_code" -> StatusCodes.GatewayTimeout.toString, "error.class" -> t.getClass.getName, "error.is_expected" -> "false")
+    case s: SocketTimeoutException => Map("http.status_code" -> StatusCodes.GatewayTimeout.toString, "error.class" -> s.getClass.getName, "error.is_expected" -> "false")
+    case u => Map("http.status_code" -> StatusCodes.ServiceUnavailable.toString, "error.class" -> u.getClass.getName, "error.is_expected" -> "false")
   }
 }
