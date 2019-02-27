@@ -15,16 +15,29 @@
  */
 
 package kamon
+
 package play
 
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.util.concurrent.TimeoutException
+
 import _root_.play.api.libs.ws.StandaloneWSRequest
+import _root_.play.api.libs.ws.StandaloneWSResponse
 import _root_.play.api.mvc.RequestHeader
 import com.typesafe.config.Config
+import kamon.play.instrumentation.GenericRequest
+import kamon.play.instrumentation.StatusCodes
 import kamon.util.DynamicAccess
 
 object Play {
 
-  @volatile private var nameGenerator: NameGenerator = new DefaultNameGenerator()
+  @volatile private var nameGenerator: NameGenerator =
+    new DefaultNameGenerator()
+
+  @volatile private var tagsGenerator: TagsGenerator =
+    new DefaultTagsGenerator()
+
   loadConfiguration(Kamon.config())
 
   def generateOperationName(requestHeader: RequestHeader): String =
@@ -33,10 +46,15 @@ object Play {
   def generateHttpClientOperationName(request: StandaloneWSRequest): String =
     nameGenerator.generateHttpClientOperationName(request)
 
+  def tags = tagsGenerator
+
   private def loadConfiguration(config: Config): Unit = {
-    val dynamic = new DynamicAccess(getClass.getClassLoader)
-    val nameGeneratorFQCN = config.getString("kamon.play.name-generator")
-    nameGenerator =  dynamic.createInstanceFor[NameGenerator](nameGeneratorFQCN, Nil).get
+    val dynamic             = new DynamicAccess(getClass.getClassLoader)
+    val nameGeneratorFQCN   = config.getString("kamon.play.name-generator")
+    val wsTagsGeneratorFQCN = config.getString("kamon.play.ws.tags-generator")
+    nameGenerator = dynamic.createInstanceFor[NameGenerator](nameGeneratorFQCN, Nil).get
+
+    tagsGenerator = dynamic.createInstanceFor[TagsGenerator](wsTagsGeneratorFQCN, Nil).get
   }
 
   Kamon.onReconfigure(new OnReconfigureHook {
@@ -50,29 +68,81 @@ trait NameGenerator {
   def generateHttpClientOperationName(request: StandaloneWSRequest): String
 }
 
-
 class DefaultNameGenerator extends NameGenerator {
-  import _root_.scala.collection.concurrent.TrieMap
-  import _root_.play.api.routing.Router
   import java.util.Locale
+  import _root_.play.api.routing.Router
+  import _root_.scala.collection.concurrent.TrieMap
 
-  private val cache = TrieMap.empty[String, String]
+  private val cache            = TrieMap.empty[String, String]
   private val normalizePattern = """\$([^<]+)<[^>]+>""".r
 
-  def generateOperationName(requestHeader: RequestHeader): String = requestHeader.attrs.get(Router.Attrs.HandlerDef).map { handlerDef ⇒
-    cache.getOrElseUpdate(s"${handlerDef.verb}${handlerDef.path}", {
-      val traceName = {
-        // Convert paths of form GET /foo/bar/$paramname<regexp>/blah to foo.bar.paramname.blah.get
-        val p = normalizePattern.replaceAllIn(handlerDef.path, "$1").replace('/', '.').dropWhile(_ == '.')
-        val normalisedPath = {
-          if (p.lastOption.exists(_ != '.')) s"$p."
-          else p
-        }
-        s"$normalisedPath${handlerDef.verb.toLowerCase(Locale.ENGLISH)}"
+  def generateOperationName(requestHeader: RequestHeader): String =
+    requestHeader.attrs
+      .get(Router.Attrs.HandlerDef)
+      .map { handlerDef ⇒
+        cache.getOrElseUpdate(
+          s"${handlerDef.verb}${handlerDef.path}", {
+            val traceName = {
+              // Convert paths of form GET /foo/bar/$paramname<regexp>/blah to foo.bar.paramname.blah.get
+              val p = normalizePattern
+                .replaceAllIn(handlerDef.path, "$1")
+                .replace('/', '.')
+                .dropWhile(_ == '.')
+              val normalisedPath = {
+                if (p.lastOption.exists(_ != '.')) s"$p."
+                else p
+              }
+              s"$normalisedPath${handlerDef.verb.toLowerCase(Locale.ENGLISH)}"
+            }
+            traceName
+          }
+        )
       }
-      traceName
-    })
-  } getOrElse "UntaggedTrace"
+      .getOrElse("UntaggedTrace")
 
-  def generateHttpClientOperationName(request: StandaloneWSRequest): String = request.uri.getAuthority
+  def generateHttpClientOperationName(request: StandaloneWSRequest): String =
+    request.uri.getAuthority
+}
+
+trait TagsGenerator {
+
+  def requestTags(request: GenericRequest): Map[String, String]
+
+  def requestExceptionTags(ex: Throwable): Map[String, String]
+
+  def wsTags(
+      standaloneWSRequest: StandaloneWSRequest,
+      standaloneWSResponse: StandaloneWSResponse
+  ): Map[String, String]
+
+  def wsExceptionTags(ex: Throwable): Map[String, String]
+
+}
+
+class DefaultTagsGenerator extends TagsGenerator {
+
+  def requestTags(request: GenericRequest): Map[String, String] = Map.empty
+
+  def requestExceptionTags(ex: Throwable): Map[String, String] = Map.empty
+
+  def wsTags(
+      standaloneWSRequest: StandaloneWSRequest,
+      standaloneWSResponse: StandaloneWSResponse
+  ): Map[String, String] = Map.empty
+
+  def wsExceptionTags(ex: Throwable): Map[String, String] = ex match {
+    case t: TimeoutException =>
+      Map("http.status_code"  -> StatusCodes.GatewayTimeout.toString,
+          "error.class"       -> t.getClass.getName)
+    case c: ConnectException =>
+      Map("http.status_code"  -> StatusCodes.GatewayTimeout.toString,
+          "error.class"       -> c.getClass.getName)
+    case s: SocketTimeoutException =>
+      Map("http.status_code"  -> StatusCodes.GatewayTimeout.toString,
+          "error.class"       -> s.getClass.getName)
+    case u =>
+      Map("http.status_code"  -> StatusCodes.ServiceUnavailable.toString,
+          "error.class"       -> u.getClass.getName)
+  }
+
 }

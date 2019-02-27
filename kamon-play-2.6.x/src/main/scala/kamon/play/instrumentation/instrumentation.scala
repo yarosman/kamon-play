@@ -16,12 +16,13 @@
 package kamon.play
 
 import kamon.Kamon
-import kamon.context.{Context, TextMap}
+import kamon.context.Context
+import kamon.context.TextMap
 import play.api.libs.ws.StandaloneWSRequest
 
 package object instrumentation {
 
-  def encodeContext(ctx:Context, request:StandaloneWSRequest): StandaloneWSRequest = {
+  def encodeContext(ctx: Context, request: StandaloneWSRequest): StandaloneWSRequest = {
     val textMap = Kamon.contextCodec().HttpHeaders.encode(ctx)
     request.addHttpHeaders(textMap.values.toSeq: _*)
   }
@@ -32,8 +33,8 @@ package object instrumentation {
   }
 
   private def readOnlyTextMapFromHeaders(headers: Map[String, String]): TextMap = new TextMap {
-    override def values: Iterator[(String, String)] = headers.iterator
-    override def get(key: String): Option[String] = headers.get(key)
+    override def values: Iterator[(String, String)]    = headers.iterator
+    override def get(key: String): Option[String]      = headers.get(key)
     override def put(key: String, value: String): Unit = {}
   }
 
@@ -44,6 +45,6 @@ package object instrumentation {
     val NotFound = 404
 
     val ServiceUnavailable = 503
-    val GatewayTimeout = 504
+    val GatewayTimeout     = 504
   }
 }

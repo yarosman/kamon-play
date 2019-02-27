@@ -18,11 +18,17 @@ package kamon.play.instrumentation
 
 import kamon.Kamon
 import kamon.play.Play
-import kamon.trace.{Span, SpanCustomizer}
+import kamon.trace.Span
+import kamon.trace.SpanCustomizer
 import kamon.util.CallingThreadExecutionContext
 import org.aspectj.lang.ProceedingJoinPoint
-import org.aspectj.lang.annotation.{Around, Aspect, Pointcut}
-import play.api.libs.ws.{StandaloneWSRequest, StandaloneWSResponse, WSRequestExecutor, WSRequestFilter}
+import org.aspectj.lang.annotation.Around
+import org.aspectj.lang.annotation.Aspect
+import org.aspectj.lang.annotation.Pointcut
+import play.api.libs.ws.StandaloneWSRequest
+import play.api.libs.ws.StandaloneWSResponse
+import play.api.libs.ws.WSRequestExecutor
+import play.api.libs.ws.WSRequestFilter
 
 import scala.concurrent.Future
 
@@ -35,7 +41,8 @@ class WSInstrumentation {
 
   @Around("standaloneWsClientUrl()")
   def aroundStandaloneWSClientUrl(pjp: ProceedingJoinPoint): Any =
-    pjp.proceed()
+    pjp
+      .proceed()
       .asInstanceOf[StandaloneWSRequest]
       .withRequestFilter(_wsInstrumentationFilter)
 
@@ -48,37 +55,47 @@ object WSInstrumentation {
     new WSRequestExecutor {
       override def apply(request: StandaloneWSRequest): Future[StandaloneWSResponse] = {
         val currentContext = Kamon.currentContext()
-        val parentSpan = currentContext.get(Span.ContextKey)
+        val parentSpan     = currentContext.get(Span.ContextKey)
 
-        val clientSpanBuilder = Kamon.buildSpan(Play.generateHttpClientOperationName(request))
+        val clientSpanBuilder = Kamon
+          .buildSpan(Play.generateHttpClientOperationName(request))
           .asChildOf(parentSpan)
           .withMetricTag("span.kind", "client")
           .withMetricTag("component", "play.client.ws")
           .withMetricTag("http.method", request.method)
           .withTag("http.url", request.uri.toString)
 
-        val clientRequestSpan = currentContext.get(SpanCustomizer.ContextKey)
+        val clientRequestSpan = currentContext
+          .get(SpanCustomizer.ContextKey)
           .customize(clientSpanBuilder)
           .start()
 
         val contextWithClientSpan = currentContext.withKey(Span.ContextKey, clientRequestSpan)
-        val requestWithContext = encodeContext(contextWithClientSpan, request)
-        val responseFuture =  rf(requestWithContext)
+        val requestWithContext    = encodeContext(contextWithClientSpan, request)
+        val responseFuture        = rf(requestWithContext)
 
         responseFuture.transform(
           s = response => {
             clientRequestSpan.tagMetric("http.status_code", response.status.toString)
 
-            if(isError(response.status))
+            Play.tags.wsTags(request, response).foreach {
+              case (k, v) => clientRequestSpan.tagMetric(k, v)
+            }
+
+            if (isError(response.status))
               clientRequestSpan.addError("error")
 
-            if(response.status == StatusCodes.NotFound)
+            if (response.status == StatusCodes.NotFound)
               clientRequestSpan.setOperationName("not-found")
 
             clientRequestSpan.finish()
             response
           },
           f = error => {
+            Play.tags.wsExceptionTags(error).foreach {
+              case (k, v) => clientRequestSpan.tagMetric(k, v)
+            }
+
             clientRequestSpan.addError("error.object", error)
             clientRequestSpan.finish()
             error

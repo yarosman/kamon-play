@@ -20,7 +20,10 @@ import akka.util.ByteString
 import kamon.Kamon
 import kamon.trace.Span
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{EssentialAction, EssentialFilter, RequestHeader, Result}
+import play.api.mvc.EssentialAction
+import play.api.mvc.EssentialFilter
+import play.api.mvc.RequestHeader
+import play.api.mvc.Result
 
 class OperationNameFilter extends EssentialFilter {
 

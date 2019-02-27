@@ -18,20 +18,28 @@ package kamon.play.di
 import javax.inject._
 
 import kamon.Kamon
-import play.api.inject.{ApplicationLifecycle, Binding, Module}
-import play.api.{Configuration, Environment, Logger}
+import play.api.inject.ApplicationLifecycle
+import play.api.inject.Binding
+import play.api.inject.Module
+import play.api.Configuration
+import play.api.Environment
+import play.api.Logger
 
 import scala.concurrent.Future
 
 class GuiceModule extends Module {
+
   def bindings(environment: Environment, configuration: Configuration): Seq[Binding[GuiceModule.KamonLoader]] = {
     Seq(bind[GuiceModule.KamonLoader].toSelf.eagerly())
   }
 }
 
 object GuiceModule {
+
   @Singleton
-  class KamonLoader @Inject() (lifecycle: ApplicationLifecycle, environment: Environment, configuration: Configuration) {
+  class KamonLoader @Inject()(lifecycle: ApplicationLifecycle,
+                              environment: Environment,
+                              configuration: Configuration) {
     Logger(classOf[KamonLoader]).info("Reconfiguring Kamon with Play's Config")
     Kamon.reconfigure(configuration.underlying)
     Kamon.loadReportersFromConfig()

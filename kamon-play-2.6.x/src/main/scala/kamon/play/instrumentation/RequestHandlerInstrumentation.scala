@@ -15,10 +15,8 @@
 
 package kamon.play.instrumentation
 
-import java.net.SocketTimeoutException
-import java.util.concurrent.TimeoutException
-
 import kamon.Kamon
+import kamon.play.Play
 import kamon.trace.Span
 import kamon.util.CallingThreadExecutionContext
 
@@ -42,9 +40,11 @@ trait GenericResponseBuilder[T] {
 
 object RequestHandlerInstrumentation {
 
-  def handleRequest[T](responseInvocation: => Future[T], request: GenericRequest)(implicit builder: GenericResponseBuilder[T]): Future[T] = {
+  def handleRequest[T](responseInvocation: => Future[T], request: GenericRequest)(
+      implicit builder: GenericResponseBuilder[T]): Future[T] = {
     val incomingContext = context(request.headers)
-    val serverSpan = Kamon.buildSpan("unknown-operation")
+    val serverSpan = Kamon
+      .buildSpan("unknown-operation")
       .asChildOf(incomingContext.get(Span.ContextKey))
       .withMetricTag("span.kind", "server")
       .withMetricTag("component", request.component)
@@ -52,27 +52,32 @@ object RequestHandlerInstrumentation {
       .withTag("http.url", request.url)
       .start()
 
-    val responseFuture = Kamon.withContext(incomingContext.withKey(Span.ContextKey, serverSpan))(responseInvocation)
+    val responseFuture =
+      Kamon.withContext(incomingContext.withKey(Span.ContextKey, serverSpan))(responseInvocation)
 
     responseFuture.transform(
       s = response => {
         val genericResponse = builder.build(response)
-        val statusCode = genericResponse.statusCode
+        val statusCode      = genericResponse.statusCode
         serverSpan.tagMetric("http.status_code", statusCode.toString)
 
-        if(isError(statusCode)) {
+        Play.tags.requestTags(request).foreach {
+          case (k, v) => serverSpan.tagMetric(k, v)
+        }
+
+        if (isError(statusCode)) {
           serverSpan.addError(genericResponse.reason)
         }
 
-        if(statusCode == StatusCodes.NotFound)
+        if (statusCode == StatusCodes.NotFound)
           serverSpan.setOperationName("not-found")
 
         serverSpan.finish()
         response
       },
       f = error => {
-        exceptionTags(error).foreach {
-          case (k, v) =>  serverSpan.tagMetric(k, v)
+        Play.tags.requestExceptionTags(error).foreach {
+          case (k, v) => serverSpan.tagMetric(k, v)
         }
         serverSpan.addError("error.object", error)
         serverSpan.finish()
@@ -81,9 +86,4 @@ object RequestHandlerInstrumentation {
     )(CallingThreadExecutionContext)
   }
 
-  private def exceptionTags(ex: Throwable) = ex match {
-    case t: TimeoutException => Map("http.status_code" -> StatusCodes.GatewayTimeout.toString, "error.class" -> t.getClass.getName, "error.is_expected" -> "false")
-    case s: SocketTimeoutException => Map("http.status_code" -> StatusCodes.GatewayTimeout.toString, "error.class" -> s.getClass.getName, "error.is_expected" -> "false")
-    case u => Map("http.status_code" -> StatusCodes.ServiceUnavailable.toString, "error.class" -> u.getClass.getName, "error.is_expected" -> "false")
-  }
 }
