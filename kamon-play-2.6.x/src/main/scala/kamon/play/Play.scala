@@ -51,7 +51,7 @@ object Play {
   private def loadConfiguration(config: Config): Unit = {
     val dynamic             = new DynamicAccess(getClass.getClassLoader)
     val nameGeneratorFQCN   = config.getString("kamon.play.name-generator")
-    val wsTagsGeneratorFQCN = config.getString("kamon.play.ws.tags-generator")
+    val wsTagsGeneratorFQCN = config.getString("kamon.play.tags-generator")
     nameGenerator = dynamic.createInstanceFor[NameGenerator](nameGeneratorFQCN, Nil).get
 
     tagsGenerator = dynamic.createInstanceFor[TagsGenerator](wsTagsGeneratorFQCN, Nil).get
@@ -132,17 +132,13 @@ class DefaultTagsGenerator extends TagsGenerator {
 
   def wsExceptionTags(ex: Throwable): Map[String, String] = ex match {
     case t: TimeoutException =>
-      Map("http.status_code"  -> StatusCodes.GatewayTimeout.toString,
-          "error.class"       -> t.getClass.getName)
+      Map("http.status_code" -> StatusCodes.GatewayTimeout.toString, "error.class" -> t.getClass.getName)
     case c: ConnectException =>
-      Map("http.status_code"  -> StatusCodes.GatewayTimeout.toString,
-          "error.class"       -> c.getClass.getName)
+      Map("http.status_code" -> StatusCodes.GatewayTimeout.toString, "error.class" -> c.getClass.getName)
     case s: SocketTimeoutException =>
-      Map("http.status_code"  -> StatusCodes.GatewayTimeout.toString,
-          "error.class"       -> s.getClass.getName)
+      Map("http.status_code" -> StatusCodes.GatewayTimeout.toString, "error.class" -> s.getClass.getName)
     case u =>
-      Map("http.status_code"  -> StatusCodes.ServiceUnavailable.toString,
-          "error.class"       -> u.getClass.getName)
+      Map("http.status_code" -> StatusCodes.ServiceUnavailable.toString, "error.class" -> u.getClass.getName)
   }
 
 }
