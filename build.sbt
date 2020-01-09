@@ -13,30 +13,28 @@
  * =========================================================================================
  */
 
-val play26Version     = "2.6.23"
-val play27Version     = "2.7.3"
+val play26Version = "2.6.23"
+val play27Version = "2.7.3"
 
-val kamonCore         = "io.kamon"  %%  "kamon-core"                    % "2.0.0"
-val kamonTestkit      = "io.kamon"  %%  "kamon-testkit"                 % "2.0.0"
-val kamonScala        = "io.kamon"  %%  "kamon-scala-future"            % "2.0.0"
-val kamonCommon       = "io.kamon"  %%  "kamon-instrumentation-common"  % "2.0.0"
-val kamonAkkaHttp     = "io.kamon"  %%  "kamon-akka-http"               % "2.0.0"
-val kanelaAgent       = "io.kamon"  %   "kanela-agent"                  % "1.0.0"
+val kamonCore     = "io.kamon" %% "kamon-core"                   % "2.0.0"
+val kamonTestkit  = "io.kamon" %% "kamon-testkit"                % "2.0.0"
+val kamonScala    = "io.kamon" %% "kamon-scala-future"           % "2.0.0"
+val kamonCommon   = "io.kamon" %% "kamon-instrumentation-common" % "2.0.0"
+val kamonAkkaHttp = "io.kamon" %% "kamon-akka-http"              % "2.0.0"
+val kanelaAgent   = "io.kamon" % "kanela-agent"                  % "1.0.0"
 
-val play              = "com.typesafe.play"       %%  "play"                  % play27Version
-val playNetty         = "com.typesafe.play"       %%  "play-netty-server"     % play27Version
-val playAkkaHttp      = "com.typesafe.play"       %%  "play-akka-http-server" % play27Version
-val playWS            = "com.typesafe.play"       %%  "play-ws"               % play27Version
-val playLogback       = "com.typesafe.play"       %%  "play-logback"          % play27Version
-val playTest          = "com.typesafe.play"       %%  "play-test"             % play27Version
-val scalatestPlus     = "org.scalatestplus.play"  %%  "scalatestplus-play"    % "4.0.3"
-
+val play          = "com.typesafe.play"      %% "play"                  % play27Version
+val playNetty     = "com.typesafe.play"      %% "play-netty-server"     % play27Version
+val playAkkaHttp  = "com.typesafe.play"      %% "play-akka-http-server" % play27Version
+val playWS        = "com.typesafe.play"      %% "play-ws"               % play27Version
+val playLogback   = "com.typesafe.play"      %% "play-logback"          % play27Version
+val playTest      = "com.typesafe.play"      %% "play-test"             % play27Version
+val scalatestPlus = "org.scalatestplus.play" %% "scalatestplus-play"    % "4.0.3"
 
 lazy val root = Project("kamon-play", file("."))
   .settings(noPublishing: _*)
   .settings(crossScalaVersions := Nil)
   .aggregate(instrumentation, commonTests, testsOnPlay26, testsOnPlay27)
-
 
 lazy val instrumentation = Project("instrumentation", file("kamon-play"))
   .enablePlugins(JavaAgent)
@@ -49,8 +47,20 @@ lazy val instrumentation = Project("instrumentation", file("kamon-play"))
     testGrouping in Test := singleTestPerJvm((definedTests in Test).value, (javaOptions in Test).value),
     libraryDependencies ++=
       compileScope(kamonCore, kamonScala, kamonAkkaHttp, kamonCommon) ++
-      providedScope(play, playNetty, playAkkaHttp, playWS, kanelaAgent))
-
+        providedScope(play, playNetty, playAkkaHttp, playWS, kanelaAgent),
+    organization := "com.x2sy",
+    organizationName := "x2sy",
+    organizationHomepage := Some(new URL("http://x2sy.com")),
+    publishMavenStyle := true,
+    publishTo := {
+      val nexus = "https://nexus.x2sy.com/repository/"
+      if (isSnapshot.value)
+        Some("x2sy Snapshots".at(nexus + "snapshots/"))
+      else
+        Some("x2sy Releases".at(nexus + "releases/"))
+    },
+    credentials += Credentials(Path.userHome / ".ivy2" / ".x2sy-credentials")
+  )
 
 lazy val commonTests = Project("common-tests", file("common-tests"))
   .dependsOn(instrumentation)
@@ -62,8 +72,9 @@ lazy val commonTests = Project("common-tests", file("common-tests"))
     scalaVersion := "2.12.8",
     libraryDependencies ++=
       compileScope(kamonCore, kamonScala, kamonAkkaHttp, kamonCommon) ++
-      providedScope(play, playNetty, playAkkaHttp, playWS, kanelaAgent) ++
-      testScope(playTest, scalatestPlus, playLogback, kamonTestkit))
+        providedScope(play, playNetty, playAkkaHttp, playWS, kanelaAgent) ++
+        testScope(playTest, scalatestPlus, playLogback, kamonTestkit)
+  )
 
 lazy val testsOnPlay26 = Project("tests-26", file("tests-2.6"))
   .dependsOn(instrumentation)
@@ -79,10 +90,11 @@ lazy val testsOnPlay26 = Project("tests-26", file("tests-2.6"))
     unmanagedResourceDirectories in Test ++= (unmanagedResourceDirectories in Test in commonTests).value,
     libraryDependencies ++=
       compileScope(kamonCore, kamonScala, kamonAkkaHttp, kamonCommon) ++
-      providedScope(kanelaAgent) ++
-      providedScope(onPlay26(play, playNetty, playAkkaHttp, playWS): _*) ++
-      testScope(onPlay26(playTest, playLogback): _*) ++
-      testScope(scalatestPlus, kamonTestkit))
+        providedScope(kanelaAgent) ++
+        providedScope(onPlay26(play, playNetty, playAkkaHttp, playWS): _*) ++
+        testScope(onPlay26(playTest, playLogback): _*) ++
+        testScope(scalatestPlus, kamonTestkit)
+  )
 
 lazy val testsOnPlay27 = Project("tests-27", file("tests-2.7"))
   .dependsOn(instrumentation)
@@ -98,25 +110,28 @@ lazy val testsOnPlay27 = Project("tests-27", file("tests-2.7"))
     unmanagedResourceDirectories in Test ++= (unmanagedResourceDirectories in Test in commonTests).value,
     libraryDependencies ++=
       compileScope(kamonCore, kamonScala, kamonAkkaHttp, kamonCommon) ++
-      providedScope(play, playNetty, playAkkaHttp, playWS, kanelaAgent) ++
-      testScope(playTest, scalatestPlus, playLogback, kamonTestkit))
+        providedScope(play, playNetty, playAkkaHttp, playWS, kanelaAgent) ++
+        testScope(playTest, scalatestPlus, playLogback, kamonTestkit)
+  )
 
-
+import sbt.Keys.organization
 import sbt.Tests._
+
 def singleTestPerJvm(tests: Seq[TestDefinition], jvmSettings: Seq[String]): Seq[Group] =
-  tests map { test =>
+  tests.map { test =>
     Group(
       name = test.name,
       tests = Seq(test),
-      runPolicy = SubProcess(ForkOptions(
-        javaHome = Option.empty[File],
-        outputStrategy = Option.empty[OutputStrategy],
-        bootJars = Vector(),
-        workingDirectory = Option.empty[File],
-        runJVMOptions = jvmSettings.toVector,
-        connectInput = false,
-        envVars = Map.empty[String, String])
-      )
+      runPolicy = SubProcess(
+        ForkOptions(
+          javaHome = Option.empty[File],
+          outputStrategy = Option.empty[OutputStrategy],
+          bootJars = Vector(),
+          workingDirectory = Option.empty[File],
+          runJVMOptions = jvmSettings.toVector,
+          connectInput = false,
+          envVars = Map.empty[String, String]
+        ))
     )
   }
 
