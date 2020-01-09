@@ -4,26 +4,27 @@ import java.time.Duration
 import java.util.concurrent.atomic.AtomicLong
 
 import io.netty.channel.Channel
-import io.netty.handler.codec.http.{HttpRequest, HttpResponse}
+import io.netty.handler.codec.http.HttpRequest
+import io.netty.handler.codec.http.HttpResponse
 import io.netty.util.concurrent.GenericFutureListener
 import kamon.Kamon
 import kamon.context.Storage
 import kamon.instrumentation.akka.http.ServerFlowWrapper
-import kamon.instrumentation.context.{CaptureCurrentTimestampOnExit, HasTimestamp}
+import kamon.instrumentation.context.CaptureCurrentTimestampOnExit
+import kamon.instrumentation.context.HasTimestamp
 import kamon.instrumentation.http.HttpServerInstrumentation.RequestHandler
-import kamon.instrumentation.http.{HttpMessage, HttpServerInstrumentation}
+import kamon.instrumentation.http.HttpMessage
+import kamon.instrumentation.http.HttpServerInstrumentation
 import kamon.util.CallingThreadExecutionContext
 import kanela.agent.api.instrumentation.InstrumentationBuilder
 import kanela.agent.api.instrumentation.classloader.ClassRefiner
 import kanela.agent.api.instrumentation.mixin.Initializer
 import kanela.agent.libs.net.bytebuddy.asm.Advice
-import play.api.mvc.RequestHeader
-import play.api.routing.{HandlerDef, Router}
 import play.core.server.NettyServer
 
 import scala.collection.JavaConverters.asScalaBufferConverter
-import scala.collection.concurrent.TrieMap
-import scala.util.{Failure, Success}
+import scala.util.Failure
+import scala.util.Success
 
 class PlayServerInstrumentation extends InstrumentationBuilder {
 
@@ -209,27 +210,4 @@ object HasServerInstrumentation {
       _handledRequests = new AtomicLong()
     }
   }
-}
-
-
-object GenerateOperationNameOnFilterHandler {
-
-  private val _operationNameCache = TrieMap.empty[String, String]
-  private val _normalizePattern = """\$([^<]+)<[^>]+>""".r
-
-  @Advice.OnMethodEnter
-  def enter(@Advice.Argument(0) request: RequestHeader): Unit = {
-    request.attrs.get(Router.Attrs.HandlerDef).map(handler => {
-      val span = Kamon.currentSpan()
-      span.name(generateOperationName(handler))
-      span.takeSamplingDecision()
-    })
-  }
-
-  private def generateOperationName(handlerDef: HandlerDef): String =
-    _operationNameCache.getOrElseUpdate(handlerDef.path, {
-      // Convert paths of form /foo/bar/$paramname<regexp>/blah to /foo/bar/paramname/blah
-      _normalizePattern.replaceAllIn(handlerDef.path, "$1")
-  })
-
 }
