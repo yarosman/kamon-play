@@ -238,7 +238,7 @@ object GenerateOperationNameOnFilterHandler {
 
   private def rebuildNameGenerator(): NameGenerator = {
     val nameGeneratorClazz =
-      Kamon.config().getString("kamon.instrumentation.play.http.server.operations.name-generator")
+      Kamon.config().getString("kamon.instrumentation.play.http.server.name-generator")
     Try(ClassLoading.createInstance[NameGenerator](nameGeneratorClazz)) match {
       case Failure(exception) =>
         log.error(s"Exception occurred on $nameGeneratorClazz instance creation, used default", exception)
