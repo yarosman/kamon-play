@@ -275,7 +275,7 @@ class DefaultNameGenerator extends NameGenerator {
     _operationNameCache.getOrElseUpdate(
       handlerDef.path, {
         // Convert paths of form /foo/bar/$paramname<regexp>/blah to /foo/bar/{paramname}/blah
-        _normalizePattern.replaceAllIn(handlerDef.path, "{$1}")
+        _normalizePattern.replaceAllIn(handlerDef.path, "{$1}").replace(".", "")
       }
     )
 }
