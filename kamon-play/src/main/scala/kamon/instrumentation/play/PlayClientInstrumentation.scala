@@ -82,7 +82,11 @@ object WSClientUrlInterceptor {
           s = response => {
             val tags = _wsTagsGenerator.requestTags(request, response)
             if (tags.nonEmpty()) {
-              requestHandler.span.tagMetrics(_wsTagsGenerator.requestTags(request, response))
+              requestHandler.span
+                .tagMetrics(_wsTagsGenerator.requestTags(request, response))
+                .tag("http.uri", request.uri.toString)
+            } else {
+              requestHandler.span.tag("http.uri", request.uri.toString)
             }
             requestHandler.processResponse(toResponse(response))
             response
@@ -152,8 +156,8 @@ trait WsTagsGenerator {
 
 class DefaultWsTagsGenerator extends WsTagsGenerator {
 
-  def requestTags(standaloneWSRequest: StandaloneWSRequest,
-                  standaloneWSResponse: StandaloneWSResponse): TagSet = TagSet.from(Map.empty[String, String])
+  def requestTags(standaloneWSRequest: StandaloneWSRequest, standaloneWSResponse: StandaloneWSResponse): TagSet =
+    TagSet.from(Map.empty[String, String])
 
   def exceptionTags(ex: Throwable): TagSet = ex match {
     case t: TimeoutException =>
