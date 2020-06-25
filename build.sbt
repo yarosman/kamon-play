@@ -13,15 +13,17 @@
  * =========================================================================================
  */
 
-val play26Version = "2.6.23"
-val play27Version = "2.7.3"
+val play26Version = "2.6.25"
+val play27Version = "2.7.5"
 
-val kamonCore     = "io.kamon" %% "kamon-core"                   % "2.0.0"
-val kamonTestkit  = "io.kamon" %% "kamon-testkit"                % "2.0.0"
-val kamonScala    = "io.kamon" %% "kamon-scala-future"           % "2.0.0"
-val kamonCommon   = "io.kamon" %% "kamon-instrumentation-common" % "2.0.0"
-val kamonAkkaHttp = "io.kamon" %% "kamon-akka-http"              % "2.0.0"
-val kanelaAgent   = "io.kamon" % "kanela-agent"                  % "1.0.0"
+val kamonVersion = "2.1.1"
+
+val kamonCore     = "io.kamon" %% "kamon-core"                   % kamonVersion
+val kamonTestkit  = "io.kamon" %% "kamon-testkit"                % kamonVersion
+val kamonScala    = "io.kamon" %% "kamon-scala-future"           % kamonVersion
+val kamonCommon   = "io.kamon" %% "kamon-instrumentation-common" % kamonVersion
+val kamonAkkaHttp = "io.kamon" %% "kamon-akka-http"              % kamonVersion
+val kanelaAgent   = "io.kamon" % "kanela-agent"                  % "1.0.5"
 
 val play          = "com.typesafe.play"      %% "play"                  % play27Version
 val playNetty     = "com.typesafe.play"      %% "play-netty-server"     % play27Version
